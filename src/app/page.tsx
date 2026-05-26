@@ -50,6 +50,57 @@ async function fetchBandData(name: string): Promise<Band | null> {
 function TracklistModal({ album, onClose }: { album: Album | null; onClose: () => void }) {
   const [tracks, setTracks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const audioRef = useState<HTMLAudioElement | null>(null);
+
+  async function playPreview(trackTitle: string, artistName: string) {
+    // Stop current audio if playing
+    if (audioRef[0]) {
+      audioRef[0].pause();
+      audioRef[0] = null;
+    }
+  
+    if (playingTrack === trackTitle) {
+      setPlayingTrack(null);
+      return;
+    }
+  
+    // Check cache first
+    if (previewUrls[trackTitle]) {
+      const audio = new Audio(previewUrls[trackTitle]);
+      audioRef[0] = audio;
+      audio.play();
+      audio.onended = () => setPlayingTrack(null);
+      setPlayingTrack(trackTitle);
+      return;
+    }
+  
+    // Fetch from iTunes
+    setPlayingTrack(`loading:${trackTitle}`);
+    try {
+      const query = encodeURIComponent(`${artistName} ${trackTitle}`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`);
+      const data = await res.json();
+      const previewUrl = data.results?.[0]?.previewUrl;
+  
+      if (!previewUrl) {
+        setPlayingTrack(null);
+        alert("No preview available for this track.");
+        return;
+      }
+  
+      setPreviewUrls(prev => ({ ...prev, [trackTitle]: previewUrl }));
+      const audio = new Audio(previewUrl);
+      audioRef[0] = audio;
+      audio.play();
+      audio.onended = () => setPlayingTrack(null);
+      setPlayingTrack(trackTitle);
+    } catch {
+      setPlayingTrack(null);
+      alert("Could not load preview.");
+    }
+  }
 
   useEffect(() => {
     if (!album) return;
@@ -108,13 +159,26 @@ function TracklistModal({ album, onClose }: { album: Album | null; onClose: () =
           <p className="text-zinc-500 text-sm text-center py-4">No tracklist found.</p>
         ) : (
           <ol className="space-y-2">
-            {tracks.map((track, i) => (
-              <li key={i} className="flex items-center gap-3 text-sm">
-                <span className="text-zinc-600 w-6 text-right">{i + 1}</span>
-                <span className="text-zinc-200">{track}</span>
-              </li>
-            ))}
-          </ol>
+  {tracks.map((track, i) => {
+    const isLoading = playingTrack === `loading:${track}`;
+    const isPlaying = playingTrack === track;
+    return (
+      <li
+        key={i}
+        className="flex items-center gap-3 text-sm group cursor-pointer hover:bg-zinc-800 rounded-lg px-2 py-1 transition-colors"
+        onClick={() => playPreview(track, album!.title)}
+      >
+        <span className="text-zinc-600 w-6 text-right">{i + 1}</span>
+        <span className={`flex-1 ${isPlaying ? "text-red-400" : "text-zinc-200"}`}>
+          {track}
+        </span>
+        <span className="text-lg">
+          {isLoading ? "⏳" : isPlaying ? "⏹" : "▶"}
+        </span>
+      </li>
+    );
+  })}
+</ol>
         )}
       </div>
     </div>
