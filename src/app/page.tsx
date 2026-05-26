@@ -47,7 +47,77 @@ async function fetchBandData(name: string): Promise<Band | null> {
   }
 }
 
-function BandCard({ band }: { band: Band }) {
+function TracklistModal({ album, onClose }: { album: Album | null; onClose: () => void }) {
+  const [tracks, setTracks] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useState(() => {
+    if (!album) return;
+    setLoading(true);
+    setTracks([]);
+
+    fetch(`https://musicbrainz.org/ws/2/release?release-group=${album.mbid}&fmt=json&limit=1`, {
+      headers: { "User-Agent": "MetalSiteProject/1.0" }
+    })
+      .then(r => r.json())
+      .then(data => {
+        const releaseId = data.releases?.[0]?.id;
+        if (!releaseId) { setLoading(false); return; }
+        return fetch(`https://musicbrainz.org/ws/2/release/${releaseId}?inc=recordings&fmt=json`, {
+          headers: { "User-Agent": "MetalSiteProject/1.0" }
+        });
+      })
+      .then(r => r?.json())
+      .then(data => {
+        const media = data?.media?.[0];
+        const trackList = media?.tracks?.map((t: any) => t.title) ?? [];
+        setTracks(trackList);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  });
+
+  if (!album) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4" onClick={onClose}>
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start gap-4 mb-6">
+          <img
+            src={album.artwork}
+            alt={album.title}
+            className="w-20 h-20 rounded object-cover bg-zinc-800"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+          <div>
+            <h2 className="text-xl font-extrabold text-white">{album.title}</h2>
+            <p className="text-zinc-500 text-sm mt-1">Full Tracklist</p>
+          </div>
+          <button onClick={onClose} className="ml-auto text-zinc-500 hover:text-white text-2xl leading-none">✕</button>
+        </div>
+
+        {/* Tracks */}
+        {loading ? (
+          <p className="text-zinc-500 text-sm text-center py-4">Loading tracks...</p>
+        ) : tracks.length === 0 ? (
+          <p className="text-zinc-500 text-sm text-center py-4">No tracklist found.</p>
+        ) : (
+          <ol className="space-y-2">
+            {tracks.map((track, i) => (
+              <li key={i} className="flex items-center gap-3 text-sm">
+                <span className="text-zinc-600 w-6 text-right">{i + 1}</span>
+                <span className="text-zinc-200">{track}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BandCard({ band, onAlbumClick }: { band: Band; onAlbumClick: (album: Album) => void }) {
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 hover:border-red-600 transition-colors duration-300">
       <h2 className="text-2xl font-extrabold uppercase tracking-tight text-white">
@@ -64,7 +134,7 @@ function BandCard({ band }: { band: Band }) {
         </h3>
         <ul className="space-y-3">
           {band.albums.map((album) => (
-            <li key={album.title} className="flex items-center gap-3">
+            <li key={album.title} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => onAlbumClick(album)}>
               <img
                 src={album.artwork}
                 alt={album.title}
@@ -104,6 +174,7 @@ export default function Home() {
   const [searchResult, setSearchResult] = useState<Band | null>(null);
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -127,6 +198,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 px-6 py-16 font-sans">
+      <TracklistModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
       {/* Header */}
       <header className="text-center mb-12">
         <h1 className="text-5xl font-black uppercase tracking-widest text-red-600 drop-shadow-lg">
@@ -164,13 +236,14 @@ export default function Home() {
         <div className="max-w-sm mx-auto mb-16">
           <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">Search Result</p>
           <BandCard band={searchResult} />
+          <BandCard key={band.name} band={band} onAlbumClick={setSelectedAlbum} />
         </div>
       )}
 
       {/* Default Bands */}
       <section className="grid gap-10 max-w-5xl mx-auto md:grid-cols-3">
         {defaultBands.map((band) => (
-          <BandCard key={band.name} band={band} />
+         <BandCard key={band.name} band={band} onAlbumClick={setSelectedAlbum} />
         ))}
       </section>
 
