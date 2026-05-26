@@ -1,0 +1,116 @@
+[
+  {
+    "name": "Iron Maiden",
+    "genre": "Heavy Metal",
+    "albums": [
+      {
+        "title": "The Number of the Beast",
+        "mbid": "4ebfe175-e7ed-34cd-8e91-67c7e4a53579",
+        "artwork": "https://coverartarchive.org/release-group/4ebfe175-e7ed-34cd-8e91-67c7e4a53579/front"
+      },
+      {
+        "title": "Iron Maiden",
+        "mbid": "88a735ad-1f8a-3f96-b410-7e5058dff7f6",
+        "artwork": "https://coverartarchive.org/release-group/88a735ad-1f8a-3f96-b410-7e5058dff7f6/front"
+      },
+      {
+        "title": "Killers",
+        "mbid": "cf1e9a98-3ea7-33e5-a8b6-8665dd9a206b",
+        "artwork": "https://coverartarchive.org/release-group/cf1e9a98-3ea7-33e5-a8b6-8665dd9a206b/front"
+      }
+    ],
+    "tours": [
+      {
+        "date": "2026-05-26",
+        "city": "Sofia",
+        "venue": "Vasil Levski Stadium"
+      },
+      {
+        "date": "2026-05-28",
+        "city": "Bucharest",
+        "venue": "Arena Națională"
+      },
+      {
+        "date": "2026-05-30",
+        "city": "Bratislava",
+        "venue": "Tehelné pole"
+      }
+    ]
+  },
+  {
+    "name": "Metallica",
+    "genre": "Thrash Metal",
+    "albums": [
+      {
+        "title": "Ride the Lightning",
+        "mbid": "0da580f2-6768-498f-af9d-2becaddf15e0",
+        "artwork": "https://coverartarchive.org/release-group/0da580f2-6768-498f-af9d-2becaddf15e0/front"
+      },
+      {
+        "title": "Master of Puppets",
+        "mbid": "3d00fb45-f8ab-3436-a8e1-b4bfc4d66913",
+        "artwork": "https://coverartarchive.org/release-group/3d00fb45-f8ab-3436-a8e1-b4bfc4d66913/front"
+      },
+      {
+        "title": "Kill ’Em All",
+        "mbid": "f44f4f73-a714-31a1-a4b8-bfcaaf311f50",
+        "artwork": "https://coverartarchive.org/release-group/f44f4f73-a714-31a1-a4b8-bfcaaf311f50/front"
+      }
+    ],
+    "tours": [
+      {
+        "date": "2026-05-30",
+        "city": "Berlin",
+        "venue": "Olympiastadion"
+      },
+      {
+        "date": "2026-06-03",
+        "city": "Bologna",
+        "venue": "Stadio Renato Dall'Ara"
+      },
+      {
+        "date": "2026-06-11",
+        "city": "Budapest",
+        "venue": "Puskás Aréna"
+      }
+    ]
+  },
+  {
+    "name": "Black Sabbath",
+    "genre": "Heavy Metal",
+    "albums": [
+      {
+        "title": "Black Sabbath",
+        "mbid": "826c9743-a3f0-3479-bf06-8df2e140ef1d",
+        "artwork": "https://coverartarchive.org/release-group/826c9743-a3f0-3479-bf06-8df2e140ef1d/front"
+      },
+      {
+        "title": "Paranoid",
+        "mbid": "cc053745-c447-3566-8f27-bed5438c9133",
+        "artwork": "https://coverartarchive.org/release-group/cc053745-c447-3566-8f27-bed5438c9133/front"
+      },
+      {
+        "title": "Master of Reality",
+        "mbid": "e51e9779-2edc-3b39-959c-299fdb5ed940",
+        "artwork": "https://coverartarchive.org/release-group/e51e9779-2edc-3b39-959c-299fdb5ed940/front"
+      }
+    ],
+    "tours": [
+      {
+        "date": "2017-02-04",
+        "city": "Birmingham",
+        "venue": "Genting Arena"
+      },
+      {
+        "date": "2017-02-02",
+        "city": "Birmingham",
+        "venue": "Genting Arena"
+      },
+      {
+        "date": "2017-01-31",
+        "city": "Birmingham",
+        "venue": "Genting Arena"
+      }
+    ]
+  }
+]

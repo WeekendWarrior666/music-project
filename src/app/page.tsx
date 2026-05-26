@@ -1,65 +1,183 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import bandsData from "../../data.json";
+
+type Album = { title: string; mbid: string; artwork: string };
+type Tour = { city: string; date: string };
+type Band = { name: string; genre: string; albums: Album[]; tours: Tour[] };
+
+const defaultBands = bandsData as Band[];
+
+const BASE_URL = "https://musicbrainz.org/ws/2";
+
+async function fetchBandData(name: string): Promise<Band | null> {
+  try {
+    const encoded = encodeURIComponent(name);
+
+    // Search for artist
+    const artistRes = await fetch(
+      `${BASE_URL}/artist/?query=artist:${encoded}&fmt=json`,
+      { headers: { "User-Agent": "MetalSiteProject/1.0" } }
+    );
+    const artistData = await artistRes.json();
+    const artist = artistData.artists?.[0];
+    if (!artist) return null;
+
+    // Get genre from tags
+    const tags = artist.tags ?? [];
+    const topTag = tags.sort((a: any, b: any) => b.count - a.count)[0];
+    const genre = topTag ? topTag.name.charAt(0).toUpperCase() + topTag.name.slice(1) : "Metal";
+
+    // Get top 3 albums
+    const albumRes = await fetch(
+      `${BASE_URL}/release-group?artist=${artist.id}&type=album&fmt=json&limit=3`,
+      { headers: { "User-Agent": "MetalSiteProject/1.0" } }
+    );
+    const albumData = await albumRes.json();
+    const albums: Album[] = (albumData["release-groups"] ?? []).slice(0, 3).map((rg: any) => ({
+      title: rg.title,
+      mbid: rg.id,
+      artwork: `https://coverartarchive.org/release-group/${rg.id}/front`,
+    }));
+
+    return { name: artist.name, genre, albums, tours: [] };
+  } catch (e) {
+    return null;
+  }
+}
+
+function BandCard({ band }: { band: Band }) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 hover:border-red-600 transition-colors duration-300">
+      <h2 className="text-2xl font-extrabold uppercase tracking-tight text-white">
+        {band.name}
+      </h2>
+      <span className="inline-block mt-1 mb-5 text-xs font-semibold uppercase tracking-widest text-red-500 bg-red-950 px-2 py-0.5 rounded">
+        {band.genre}
+      </span>
+
+      {/* Albums */}
+      <div className="mb-5">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
+          Discography
+        </h3>
+        <ul className="space-y-3">
+          {band.albums.map((album) => (
+            <li key={album.title} className="flex items-center gap-3">
+              <img
+                src={album.artwork}
+                alt={album.title}
+                width={48}
+                height={48}
+                className="rounded w-12 h-12 object-cover bg-zinc-800"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+              <span className="text-sm text-zinc-300">{album.title}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Tour Dates */}
+      {band.tours.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
+            Tour Dates
+          </h3>
+          <ul className="space-y-2">
+            {band.tours.map((show) => (
+              <li key={show.city} className="flex justify-between text-sm border border-zinc-800 rounded-lg px-3 py-2 bg-zinc-800/50">
+                <span className="text-zinc-200">{show.city}</span>
+                <span className="text-zinc-500">{show.date}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [searchResult, setSearchResult] = useState<Band | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  async function handleSearch() {
+    if (!query.trim()) return;
+    setLoading(true);
+    setNotFound(false);
+    setSearchResult(null);
+
+    const result = await fetchBandData(query.trim());
+
+    if (result) {
+      setSearchResult(result);
+    } else {
+      setNotFound(true);
+    }
+    setLoading(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") handleSearch();
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-6 py-16 font-sans">
+      {/* Header */}
+      <header className="text-center mb-12">
+        <h1 className="text-5xl font-black uppercase tracking-widest text-red-600 drop-shadow-lg">
+          🤘 Metal Underground
+        </h1>
+        <p className="mt-3 text-zinc-400 text-lg tracking-wide">
+          Albums · Tour Dates · Darkness
+        </p>
+      </header>
+
+      {/* Search Bar */}
+      <div className="max-w-xl mx-auto mb-16 flex gap-3">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search any band... e.g. Slayer"
+          className="flex-1 bg-zinc-800 border border-zinc-600 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <button
+          onClick={handleSearch}
+          disabled={loading}
+          className="bg-red-600 hover:bg-red-700 disabled:bg-zinc-700 text-white font-bold px-6 py-3 rounded-xl transition-colors"
+        >
+          {loading ? "..." : "Search"}
+        </button>
+      </div>
+
+      {/* Search Result */}
+      {notFound && (
+        <p className="text-center text-zinc-500 mb-10">No band found for "{query}". Try another name.</p>
+      )}
+      {searchResult && (
+        <div className="max-w-sm mx-auto mb-16">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">Search Result</p>
+          <BandCard band={searchResult} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {/* Default Bands */}
+      <section className="grid gap-10 max-w-5xl mx-auto md:grid-cols-3">
+        {defaultBands.map((band) => (
+          <BandCard key={band.name} band={band} />
+        ))}
+      </section>
+
+      {/* Footer */}
+      <footer className="text-center mt-24 text-zinc-600 text-sm tracking-wide">
+        © 2026 Metal Underground · Built with Next.js & Tailwind
+      </footer>
+    </main>
   );
 }
