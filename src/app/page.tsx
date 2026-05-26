@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import bandsData from "../../data.json";
 
 type Album = { title: string; mbid: string; artwork: string };
-type Tour = { city: string; date: string };
+type Tour = { city: string; date: string; venue?: string };
 type Band = { name: string; genre: string; albums: Album[]; tours: Tour[] };
 
 const defaultBands = bandsData as Band[];
@@ -51,31 +51,35 @@ function TracklistModal({ album, onClose }: { album: Album | null; onClose: () =
   const [tracks, setTracks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (!album) return;
     setLoading(true);
     setTracks([]);
 
     fetch(`https://musicbrainz.org/ws/2/release?release-group=${album.mbid}&fmt=json&limit=1`, {
-      headers: { "User-Agent": "MetalSiteProject/1.0" }
+      headers: { "User-Agent": "MetalSiteProject/1.0" },
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         const releaseId = data.releases?.[0]?.id;
-        if (!releaseId) { setLoading(false); return; }
-        return fetch(`https://musicbrainz.org/ws/2/release/${releaseId}?inc=recordings&fmt=json`, {
-          headers: { "User-Agent": "MetalSiteProject/1.0" }
-        });
+        if (!releaseId) {
+          setLoading(false);
+          return;
+        }
+        return fetch(
+          `https://musicbrainz.org/ws/2/release/${releaseId}?inc=recordings&fmt=json`,
+          { headers: { "User-Agent": "MetalSiteProject/1.0" } }
+        );
       })
-      .then(r => r?.json())
-      .then(data => {
+      .then((r) => r?.json())
+      .then((data) => {
         const media = data?.media?.[0];
-        const trackList = media?.tracks?.map((t: any) => t.title) ?? [];
+        const trackList = media?.tracks?.map((t: { title: string }) => t.title) ?? [];
         setTracks(trackList);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  });
+  }, [album]);
 
   if (!album) return null;
 
@@ -157,9 +161,17 @@ function BandCard({ band, onAlbumClick }: { band: Band; onAlbumClick: (album: Al
           </h3>
           <ul className="space-y-2">
             {band.tours.map((show) => (
-              <li key={show.city} className="flex justify-between text-sm border border-zinc-800 rounded-lg px-3 py-2 bg-zinc-800/50">
-                <span className="text-zinc-200">{show.city}</span>
-                <span className="text-zinc-500">{show.date}</span>
+              <li
+                key={`${show.date}-${show.city}`}
+                className="flex justify-between gap-3 text-sm border border-zinc-800 rounded-lg px-3 py-2 bg-zinc-800/50"
+              >
+                <div className="min-w-0">
+                  <span className="text-zinc-200 block truncate">{show.city}</span>
+                  {show.venue && (
+                    <span className="text-zinc-500 text-xs truncate block">{show.venue}</span>
+                  )}
+                </div>
+                <span className="text-zinc-500 shrink-0">{show.date}</span>
               </li>
             ))}
           </ul>
@@ -235,8 +247,7 @@ export default function Home() {
       {searchResult && (
         <div className="max-w-sm mx-auto mb-16">
           <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">Search Result</p>
-          <BandCard band={searchResult} />
-          <BandCard key={band.name} band={band} onAlbumClick={setSelectedAlbum} />
+          <BandCard band={searchResult} onAlbumClick={setSelectedAlbum} />
         </div>
       )}
 
